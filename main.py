@@ -1,16 +1,29 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
-import os, json, math
+from typing import Optional, List, Dict, Any
+import os, json, math, asyncio
 
 from Backend.Chatbot import ChatBot
 from Backend.TTS import TTS
 from Backend.UserDB import create_user, get_user, get_user_by_pnr, init_db
+from Backend.VoiceService import voice_reader
+from Backend.NavigationService import navigation_service
+from Backend.FlightMonitor import flight_monitor
 
 app = FastAPI(title="AeroGuide API")
+
+@app.on_event("startup")
+async def startup_event():
+    # Background monitor
+    asyncio.create_task(_monitor_loop())
+
+async def _monitor_loop():
+    while True:
+        await asyncio.sleep(60)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,10 +79,36 @@ class FoodSearchRequest(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     user_id: Optional[str] = None
+    budget: Optional[int] = 300
+
+class MealComboRequest(BaseModel):
+    budget: int
+    dietary_preference: str
+    meal_type: str = "full_meal"
+
+class VoiceReadRequest(BaseModel):
+    user_id: str
+    text: str
+    language: str = "en"
+
+class StopVoiceRequest(BaseModel):
+    user_id: str
+
+class NavigationRequest(BaseModel):
+    from_location: str
+    to_location: str
+    mode: str = "walking"
+
+class FlightRegistrationRequest(BaseModel):
+    user_id: str
+    flight_number: str
+    gate: str
+    terminal: str
+    boarding_time: str
 
 # ── Chat Endpoint (Enhanced) ──────────────────────────
 @app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
+def chat_endpoint(request: ChatRequest):
     # Build enriched user context
     user_context = request.user_profile
     if request.user_id:
@@ -86,7 +125,6 @@ async def chat_endpoint(request: ChatRequest):
 
     print(f"[Chat] query='{request.query}' user_id={request.user_id} coords={request.latitude},{request.longitude}")
     response_text = chatbot.get_response(request.query, user_context, request.latitude, request.longitude)
-    tts.speak(response_text)
     return {"response": response_text}
 
 # ── User Profile Endpoints ─────────────────────────────
@@ -272,6 +310,67 @@ async def get_all_offers():
                 **offer
             })
     return {"offers": all_offers, "total": len(all_offers)}
+
+# ── Voice Reading Endpoints ────────────────────────────
+@app.post("/api/voice/read")
+async def start_voice_reading(request: VoiceReadRequest):
+    voice_reader.read_document(text=request.text, language=request.language)
+    return {"status": "reading_started", "message": "Voice reading initiated"}
+
+@app.post("/api/voice/stop")
+async def stop_voice_reading(request: StopVoiceRequest):
+    voice_reader.stop_reading()
+    return {"status": "stopped"}
+
+@app.get("/api/voice/status")
+async def get_voice_status():
+    return voice_reader.get_status()
+
+# ── Navigation Endpoints ───────────────────────────────
+@app.post("/api/navigation/directions")
+async def get_navigation_directions(request: NavigationRequest):
+    directions = navigation_service.get_directions(
+        from_zone=request.from_location,
+        to_zone=request.to_location
+    )
+    return directions
+
+@app.post("/api/navigation/readable-location")
+async def get_readable_location(coordinates: Dict[str, float]):
+    lat = coordinates.get("lat")
+    lon = coordinates.get("lon")
+    if lat is not None and lon is not None:
+        readable = navigation_service.get_readable_location(lat, lon)
+        return {"location": readable}
+    return {"location": "Unknown Location"}
+
+# ── Flight Monitoring Endpoints ────────────────────────
+@app.websocket("/ws/flight-updates/{user_id}")
+async def flight_updates_websocket(websocket: WebSocket, user_id: str):
+    await websocket.accept()
+    # Simplified WebSocket handler
+    try:
+        while True:
+            # Check for notifications
+            notifs = flight_monitor.get_notifications(user_id)
+            for notif in notifs:
+                await websocket.send_json(notif)
+            await asyncio.sleep(2)
+    except WebSocketDisconnect:
+        pass
+
+@app.post("/api/flight/register")
+async def register_user_flight(request: FlightRegistrationRequest):
+    flight_monitor.register_flight(
+        user_id=request.user_id,
+        flight_data=request.model_dump()
+    )
+    return {"status": "registered", "message": "Flight monitoring activated"}
+
+@app.get("/api/flight/trigger-demo/{user_id}")
+async def trigger_demo_change(user_id: str, change_type: str = "gate"):
+    result = flight_monitor.trigger_demo_change(user_id, change_type)
+    return result
 
 # ── Static files ───────────────────────────────────────
 if os.path.exists("dist"):

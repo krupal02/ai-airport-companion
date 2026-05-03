@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useChat } from '../../hooks/useChat';
 import { useApp } from '../../context/AppContext';
 import { suggestedPrompts } from '../../utils/mockData';
+import { useVoice } from '../../hooks/useVoice';
+import RouteDisplay from '../Navigation/RouteDisplay';
 
 function parseContent(text) {
   // Simple markdown-like parsing for bold
@@ -16,7 +18,9 @@ function parseContent(text) {
   });
 }
 
-function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime }) {
+function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime, startReading }) {
+  const [showNav, setShowNav] = useState(false);
+
   if (msg.type === 'system') {
     return (
       <div className="message system" role="alert">
@@ -43,9 +47,28 @@ function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime }) {
           </div>
         )}
         {msg.hasNavigation && (
-          <button className="msg-nav-btn" aria-label="Start navigation">
-            🗺️ Start Navigation
-          </button>
+          <div style={{ marginTop: '12px' }}>
+            {!showNav ? (
+              <button 
+                className="msg-nav-btn" 
+                style={{ width: '100%', background: 'var(--primary)', color: '#fff' }} 
+                aria-label="Start navigation" 
+                onClick={() => setShowNav(true)}
+              >
+                🗺️ Show Directions to {msg.navigationTo || 'Destination'}
+              </button>
+            ) : (
+              <div style={{ marginTop: '8px', textAlign: 'left' }}>
+                <button 
+                  style={{ fontSize: '0.75rem', color: 'var(--text-sec)', marginBottom: '8px', cursor: 'pointer' }} 
+                  onClick={() => setShowNav(false)}
+                >
+                  Close Navigation
+                </button>
+                <RouteDisplay from="Terminal 3, Main Entrance" to={msg.navigationTo || 'Gate 5B'} />
+              </div>
+            )}
+          </div>
         )}
         {msg.hasPlaces && msg.places && (
           <div className="msg-places">
@@ -76,6 +99,9 @@ function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime }) {
               disabled={!!feedbackGiven}
             >👎</button>
             {feedbackGiven && <span style={{ fontSize: '.75rem', color: '#52C41A' }}>Thanks!</span>}
+            <button className="read-aloud-btn ml-2 bg-gray-800 px-2 py-1 rounded text-xs hover:bg-gray-700 transition" onClick={() => startReading(msg.content)}>
+              🔊 Read Aloud
+            </button>
           </div>
         )}
       </div>
@@ -87,6 +113,7 @@ function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime }) {
 export default function ChatInterface() {
   const { messages, isTyping, feedbackGiven, sendMessage, giveFeedback } = useChat();
   const { flight, userMode, coordinates, userProfile } = useApp();
+  const { isReading, stopReading, startReading } = useVoice();
   const [input, setInput] = useState('');
   const [micActive, setMicActive] = useState(false);
   const messagesEndRef = useRef(null);
@@ -98,6 +125,7 @@ export default function ChatInterface() {
 
   const handleSend = () => {
     if (!input.trim()) return;
+    if (isReading) stopReading();
     sendMessage(input, userMode, coordinates, userProfile);
     setInput('');
   };
@@ -178,6 +206,7 @@ export default function ChatInterface() {
             feedbackGiven={feedbackGiven[msg.id]}
             onFeedback={giveFeedback}
             isFirstTime={isFirstTime}
+            startReading={startReading}
           />
         ))}
         {isTyping && (
@@ -206,13 +235,24 @@ export default function ChatInterface() {
 
       {/* Input */}
       <div className="chat-input-area">
+        {isReading && (
+          <div className="flex items-center gap-3 bg-gray-800 p-2 rounded-lg mb-2 text-sm text-blue-300">
+            <div className="flex gap-1">
+              <span className="w-1 h-3 bg-blue-400 animate-pulse"></span>
+              <span className="w-1 h-3 bg-blue-400 animate-pulse" style={{animationDelay: '150ms'}}></span>
+              <span className="w-1 h-3 bg-blue-400 animate-pulse" style={{animationDelay: '300ms'}}></span>
+            </div>
+            AI is reading...
+            <button onClick={stopReading} className="ml-auto text-red-400 hover:text-red-300">⏸️ Pause</button>
+          </div>
+        )}
         <div className="chat-input-wrap">
           <input
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder={isFirstTime ? "Ask me anything about the airport..." : "Ask away..."}
+            placeholder={isReading ? "Type to stop reading..." : (isFirstTime ? "Ask me anything about the airport..." : "Ask away...")}
             aria-label="Type your message"
             id="chat-input"
           />

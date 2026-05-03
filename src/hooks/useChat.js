@@ -45,19 +45,35 @@ export function useChat() {
       });
 
       const data = await res.json();
+      
+      // Determine if navigation should be shown based on user intent
+      const q = text.toLowerCase();
+      const needsNav = q.includes('where') || q.includes('navigate') || q.includes('how to get to') || q.includes('directions');
+      let dest = 'Gate 5B';
+      if (q.includes('gate')) {
+        const match = q.match(/gate\s*(\w+)/i);
+        if (match) dest = `Gate ${match[1].toUpperCase()}`;
+      } else if (q.includes('terminal')) {
+        const match = q.match(/terminal\s*(\w+)/i);
+        if (match) dest = `Terminal ${match[1].toUpperCase()}`;
+      } else if (q.includes('transfer')) {
+         dest = 'Terminal Transfer Point';
+      }
 
       const assistantMsg = {
         id: messageIdCounter++,
         type: 'assistant',
         content: data.response,
         timestamp: getTimeString(),
-        hasNavigation: false,
+        hasNavigation: needsNav,
+        navigationTo: dest,
         hasPlaces: false,
       };
 
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
       console.error(err);
+      // Fallback message
       setMessages(prev => [...prev, {
         id: messageIdCounter++,
         type: 'system',
