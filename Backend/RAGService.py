@@ -44,6 +44,19 @@ class RAGService:
                 data = json.load(f)
             self._parse_shopping_data(data)
 
+        # 5. Parse any GeoJSON files (like export (1).geojson) for accurate real-world points
+        data_dir = "Data"
+        if os.path.exists(data_dir):
+            for file in os.listdir(data_dir):
+                if file.endswith(".geojson"):
+                    path = os.path.join(data_dir, file)
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        self._parse_geojson_data(data)
+                    except Exception as e:
+                        print(f"Failed to parse {file}: {e}")
+
         print(f"Loaded {len(self.documents)} knowledge documents.")
 
     def _parse_airport_knowledge(self, data):
@@ -229,6 +242,36 @@ class RAGService:
                     f"{offers_text}"
                 ),
                 metadata={"source": "shopping", "type": shop.get("type", "retail"), "name": shop.get("name")}
+            ))
+
+    def _parse_geojson_data(self, data):
+        """Parse raw GeoJSON features into RAG documents for exact coordinate/location tracking."""
+        for feature in data.get("features", []):
+            props = feature.get("properties", {})
+            name = props.get("name") or props.get("ref")
+            poi_type = props.get("amenity") or props.get("shop") or props.get("aeroway")
+            
+            if not name or not poi_type:
+                continue
+                
+            lat, lon = "Unknown", "Unknown"
+            geom = feature.get("geometry", {})
+            if geom.get("type") == "Point":
+                lon, lat = geom.get("coordinates", ["Unknown", "Unknown"])
+            elif geom.get("type") == "Polygon":
+                # Rough center
+                coords = geom.get("coordinates", [[["Unknown", "Unknown"]]])[0][0]
+                lon, lat = coords[0], coords[1]
+                
+            level = props.get("level", "Main Level")
+            desc = f"{name} is a {poi_type} located at coordinates ({lat}, {lon}) on {level}. "
+            if props.get("cuisine"): desc += f"Cuisine: {props.get('cuisine')}. "
+            if props.get("opening_hours"): desc += f"Hours: {props.get('opening_hours')}. "
+            
+            # This allows the AI to calculate exact distance using 80m/min walking speed.
+            self.documents.append(Document(
+                page_content=desc,
+                metadata={"source": "geojson", "type": poi_type, "name": name}
             ))
 
     def retrieve_context(self, query, k=8):

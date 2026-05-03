@@ -17,12 +17,7 @@ app = FastAPI(title="AeroGuide API")
 
 @app.on_event("startup")
 async def startup_event():
-    # Background monitor
-    asyncio.create_task(_monitor_loop())
-
-async def _monitor_loop():
-    while True:
-        await asyncio.sleep(60)
+    pass
 
 
 app.add_middleware(

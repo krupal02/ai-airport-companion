@@ -11,13 +11,15 @@ class ChatBot:
         """Build a context-aware system prompt based on user profile data."""
         
         base = (
-            "You are AeroGuide, an AI Airport Companion at Indira Gandhi International Airport (DEL), New Delhi. "
+            "You are AeroGuide, an AI Airport Companion at the Airport. "
             "You are helpful, polite, and concise. "
             "ALWAYS use the Context Information below to answer. Quote specific details like gate numbers, "
-            "coordinates, restaurant names, prices, security steps, shop items, and SKUs from the context. "
+            "restaurant names, prices, security steps, shop items, and SKUs from the context. "
             "If the context contains the answer, use it. If not, say you don't have that information. "
-            "Always provide time estimates and walking distances when discussing locations. "
-            "Assume average walking speed of 80 meters per minute inside the terminal."
+            "CRITICAL: NEVER show raw latitude/longitude coordinates to the user. Instead, use landmarks, terminal zones, or simple place names. Calculate distances internally. "
+            "Always provide exact time estimates and walking distances when discussing locations (Assume 80 meters/min walking speed). "
+            "CRITICAL: If the user asks about food, cafes, or restaurants, YOU MUST explicitly tell them: 'You can use the Budget-Aware Food Finder below to set your exact budget and dietary preferences!' "
+            "CRITICAL: If the user asks about security line wait times or their PNR, tell them the live security wait time provided in the Passenger Location context below."
         )
 
         # Parse profile string for personalization
@@ -92,10 +94,15 @@ class ChatBot:
             print(f"RAG error: {e}")
             context = ""
         
+        import random
         # Location Mapping
         location_context = "Terminal 2, Near Check-in Area"
         if latitude and longitude:
             location_context = f"Coordinates: ({latitude}, {longitude}) - Terminal 2 Area"
+
+        # Mock live security wait time for the presentation
+        live_wait = random.randint(4, 12)
+        location_context += f"\nLIVE SECURITY WAIT TIME FOR CURRENT PNR: {live_wait} minutes."
 
         system_prompt = self._build_system_prompt(user_profile, location_context, context)
         

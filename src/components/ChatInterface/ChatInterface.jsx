@@ -111,8 +111,8 @@ function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime, startReadi
 }
 
 export default function ChatInterface() {
+  const { flight, userMode, coordinates, userProfile, showNavigation, setShowNavigation, navDestination } = useApp();
   const { messages, isTyping, feedbackGiven, sendMessage, giveFeedback } = useChat();
-  const { flight, userMode, coordinates, userProfile } = useApp();
   const { isReading, stopReading, startReading } = useVoice();
   const [input, setInput] = useState('');
   const [micActive, setMicActive] = useState(false);
@@ -273,6 +273,34 @@ export default function ChatInterface() {
           </button>
         </div>
       </div>
+      {/* Global Navigation Overlay (Triggered from Sidebar) */}
+      {showNavigation && navDestination && (
+        <div className="nav-overlay" style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.95)',
+          zIndex: 1000,
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0, color: '#fff' }}>🗺️ Navigation to {navDestination}</h3>
+            <button 
+              onClick={() => setShowNavigation(false)}
+              style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Close Map
+            </button>
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden', borderRadius: '12px', background: '#1e293b' }}>
+            <RouteDisplay from="Terminal Area" to={navDestination} />
+          </div>
+        </div>
+      )}
     </main>
   );
 }

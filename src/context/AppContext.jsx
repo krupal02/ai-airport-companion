@@ -51,6 +51,7 @@ export function AppProvider({ children }) {
   const [tips, setTips] = useState(quickTips);
   const [weather, setWeather] = useState(destinationWeather);
   const [showNavigation, setShowNavigation] = useState(false);
+  const [navDestination, setNavDestination] = useState(null);
   const [mobilePanel, setMobilePanel] = useState(null);
   const [coordinates, setCoordinates] = useState(null);
 
@@ -104,6 +105,9 @@ export function AppProvider({ children }) {
         tips,
         weather,
         showNavigation,
+        setShowNavigation,
+        navDestination,
+        setNavDestination,
         mobilePanel,
         coordinates,
         // New profile state

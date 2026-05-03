@@ -2,8 +2,13 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 
 export default function RightPanel() {
-  const { places, currentOffers, tips, weather, userMode } = useApp();
+  const { places, currentOffers, tips, weather, userMode, setShowNavigation, setNavDestination } = useApp();
   const isFrequent = userMode === 'frequent';
+
+  const handleNavigate = (dest) => {
+    setNavDestination(dest);
+    setShowNavigation(true);
+  };
 
   return (
     <aside className="right-panel" role="complementary" aria-label="Suggestions and nearby places">
@@ -11,7 +16,12 @@ export default function RightPanel() {
       <div>
         <div className="card-title">📍 Near You</div>
         {places.map(p => (
-          <div className="nearby-card" key={p.id} style={{ marginBottom: 10, position: 'relative' }}>
+          <div 
+            className="nearby-card" 
+            key={p.id} 
+            style={{ marginBottom: 10, position: 'relative', cursor: 'pointer' }}
+            onClick={() => handleNavigate(p.name)}
+          >
             <div className="nearby-icon">{p.icon}</div>
             <div className="nearby-info">
               <div className="nearby-name">{p.name}</div>
@@ -32,12 +42,17 @@ export default function RightPanel() {
       <div>
         <div className="card-title">🏷️ Offers & Deals</div>
         {currentOffers.map(o => (
-          <div className="offer-card" key={o.id} style={{ marginBottom: 10 }}>
+          <div 
+            className="offer-card" 
+            key={o.id} 
+            style={{ marginBottom: 10, cursor: 'pointer' }}
+            onClick={() => handleNavigate(o.store)}
+          >
             <div className="offer-badge">{o.badge}</div>
             <div className="offer-store">{o.store}</div>
             <div className="offer-desc">{o.description}</div>
             <div className="offer-validity">⏰ {o.validity}</div>
-            <div className="offer-cta">View Details →</div>
+            <div className="offer-cta">Navigate to Shop →</div>
           </div>
         ))}
       </div>
