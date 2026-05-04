@@ -111,7 +111,7 @@ function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime, startReadi
 }
 
 export default function ChatInterface() {
-  const { flight, userMode, coordinates, userProfile, showNavigation, setShowNavigation, navDestination } = useApp();
+  const { flight, userMode, coordinates, userProfile, language, showNavigation, setShowNavigation, navDestination } = useApp();
   const { messages, isTyping, feedbackGiven, sendMessage, giveFeedback } = useChat();
   const { isReading, stopReading, startReading } = useVoice();
   const [input, setInput] = useState('');
@@ -126,7 +126,7 @@ export default function ChatInterface() {
   const handleSend = () => {
     if (!input.trim()) return;
     if (isReading) stopReading();
-    sendMessage(input, userMode, coordinates, userProfile);
+    sendMessage(input, userMode, coordinates, userProfile, language);
     setInput('');
   };
 
@@ -138,7 +138,7 @@ export default function ChatInterface() {
   };
 
   const handlePrompt = (text) => {
-    sendMessage(text, userMode, coordinates, userProfile);
+    sendMessage(text, userMode, coordinates, userProfile, language);
   };
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

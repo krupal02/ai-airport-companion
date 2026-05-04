@@ -18,7 +18,7 @@ export function useChat() {
   const [feedbackGiven, setFeedbackGiven] = useState({});
   const scrollRef = useRef(null);
 
-  const sendMessage = useCallback(async (text, userMode = 'first-time', coordinates = null, userProfile = null) => {
+  const sendMessage = useCallback(async (text, userMode = 'first-time', coordinates = null, userProfile = null, language = null) => {
     if (!text.trim()) return;
 
     const userMsg = {
@@ -32,12 +32,15 @@ export function useChat() {
     setIsTyping(true);
 
     try {
+      const profileString = userProfile ? JSON.stringify(userProfile) : userMode;
+      const langStr = language ? language.name : 'English';
+      
       const res = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: text,
-          user_profile: userMode,
+          user_profile: `${profileString} | User prefers language: ${langStr}`,
           user_id: userProfile?.user_id || null,
           latitude: coordinates?.lat || null,
           longitude: coordinates?.lng || null

@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-import os, json, math, asyncio
+import os, json, math, asyncio, ollama
 
 from Backend.Chatbot import ChatBot
 from Backend.TTS import TTS
@@ -370,6 +370,108 @@ async def trigger_demo_change(user_id: str, change_type: str = "gate"):
 # ── Static files ───────────────────────────────────────
 if os.path.exists("dist"):
     app.mount("/", StaticFiles(directory="dist", html=True), name="static")
+
+# --- TERMINAL ALERT SECTION START ---
+
+# Load airport JSON dataset that already exists in the project
+try:
+    with open("Data/airport_knowledge.json", "r", encoding="utf-8") as f:
+        AIRPORT_DATA = json.load(f)
+except Exception as e:
+    print(f"Error loading dataset: {e}")
+    AIRPORT_DATA = {}
+
+# Build gate coordinate lookup from dataset
+gate_coordinates = {}
+for gate in AIRPORT_DATA.get("real_airport_navigation_and_gates", []):
+    if "location" in gate and "coordinates" in gate:
+        try:
+            lat, lon = map(float, gate["coordinates"].split(","))
+            gate_coordinates[gate["location"]] = (lat, lon)
+        except:
+            pass
+
+# Calculate walking time in minutes
+def haversine_minutes(loc1: str, loc2: str) -> int:
+    R = 6371000
+    lat1, lon1 = gate_coordinates.get(loc1, (0, 0))
+    lat2, lon2 = gate_coordinates.get(loc2, (0, 0))
+    if (lat1, lon1) == (0, 0) or (lat2, lon2) == (0, 0):
+        return 10
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    distance_m = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return max(1, int(distance_m / 80))
+
+# Flight state and WebSocket Manager
+flight_state_db = {"AI-202": "Terminal 1", "6E-441": "Terminal 2"}
+live_flight_data = {"AI-202": "Terminal 1", "6E-441": "Terminal 2"}
+pnr_flight_map = {"KRUPAL777": "AI-202"}
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+    async def connect(self, pnr_id: str, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections[pnr_id] = websocket
+    def disconnect(self, pnr_id: str):
+        if pnr_id in self.active_connections:
+            del self.active_connections[pnr_id]
+    async def send_to_passenger(self, pnr_id: str, message_dict: dict):
+        if pnr_id in self.active_connections:
+            try: await self.active_connections[pnr_id].send_json(message_dict)
+            except: pass
+
+manager = ConnectionManager()
+
+# Background monitor
+async def monitor_terminal_changes():
+    while True:
+        await asyncio.sleep(10)
+        for flight_no, new_terminal in live_flight_data.items():
+            old_terminal = flight_state_db.get(flight_no)
+            if old_terminal and old_terminal != new_terminal:
+                walk_minutes = haversine_minutes(old_terminal, new_terminal)
+                try:
+                    prompt = f"In one short urgent sentence, tell passenger their terminal changed from {old_terminal} to {new_terminal} for flight {flight_no}. Walking time is {walk_minutes} minutes."
+                    response = ollama.chat(model="qwen2.5:0.5b", messages=[{"role": "user", "content": prompt}])
+                    qwen_message = response['message']['content'].strip()
+                except:
+                    qwen_message = f"Urgent: Flight {flight_no} terminal changed to {new_terminal}. Walk time: {walk_minutes} min."
+                
+                alert = {"type": "TERMINAL_CHANGE", "flight_no": flight_no, "old_terminal": old_terminal, "new_terminal": new_terminal, "walk_time_minutes": walk_minutes, "message": qwen_message}
+                for pnr, f_no in pnr_flight_map.items():
+                    if f_no == flight_no: await manager.send_to_passenger(pnr, alert)
+                flight_state_db[flight_no] = new_terminal
+
+@app.on_event("startup")
+async def start_terminal_monitor():
+    asyncio.create_task(monitor_terminal_changes())
+
+@app.websocket("/ws/alerts/{pnr_id}")
+async def websocket_terminal_alerts(websocket: WebSocket, pnr_id: str):
+    await manager.connect(pnr_id, websocket)
+    try:
+        while True:
+            await asyncio.sleep(30)
+            await websocket.send_json({"type": "ping"})
+    except WebSocketDisconnect:
+        manager.disconnect(pnr_id)
+
+class TerminalChangeSimulation(BaseModel):
+    flight_no: str
+    new_terminal: str
+
+@app.post("/simulate/terminal-change")
+async def simulate_terminal_change(data: TerminalChangeSimulation):
+    if data.flight_no in live_flight_data:
+        live_flight_data[data.flight_no] = data.new_terminal
+        return {"status": "ok"}
+    return {"status": "error"}
+
+# --- TERMINAL ALERT SECTION END ---
 
 if __name__ == "__main__":
     import uvicorn

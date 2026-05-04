@@ -79,7 +79,14 @@
         ],
         "estimated_time": "35-50 minutes",
         "liquid_rule": "3-1-1 rule applies. One clear resealable bag per person.",
-        "currency_limit": "₹25,000 cash for domestic. USD 5,000 for international without RBI declaration."
+        "currency_limit": "₹25,000 cash for domestic. USD 5,000 for international without RBI declaration.",
+        "prohibited_items_strict": [
+          {"item": "Meat/dairy products", "examples": "Fresh meat, cheese (varies by destination)", "icon": "🥩"},
+          {"item": "Fresh fruits and vegetables", "examples": "Most fresh produce banned on international flights", "icon": "🍎"},
+          {"item": "Soil or plants", "examples": "Seeds, soil, live plants require phytosanitary certificate", "icon": "🌱"},
+          {"item": "Weapons", "examples": "Even decorative swords, replica guns are banned", "icon": "⚔️"},
+          {"item": "Counterfeit goods", "examples": "Fake branded items can be confiscated", "icon": "🚫"}
+        ]
       }
     },
     "BLR": {
@@ -114,7 +121,14 @@
         ],
         "estimated_time": "20-30 minutes",
         "liquid_rule": "3-1-1 rule applies",
-        "currency_limit": "₹25,000 domestic. USD 5,000 international without declaration."
+        "currency_limit": "₹25,000 domestic. USD 5,000 international without declaration.",
+        "prohibited_items_strict": [
+          {"item": "Meat/dairy products", "examples": "Fresh meat, cheese (varies by destination)", "icon": "🥩"},
+          {"item": "Fresh fruits and vegetables", "examples": "Most fresh produce banned on international flights", "icon": "🍎"},
+          {"item": "Soil or plants", "examples": "Seeds, soil, live plants require phytosanitary certificate", "icon": "🌱"},
+          {"item": "Weapons", "examples": "Even decorative swords, replica guns are banned", "icon": "⚔️"},
+          {"item": "Counterfeit goods", "examples": "Fake branded items can be confiscated", "icon": "🚫"}
+        ]
       }
     }
   },

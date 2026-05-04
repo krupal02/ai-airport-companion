@@ -6,6 +6,7 @@ export default function LeftPanel() {
     flight, location, userMode, toggleNavigation,
     userProfile, resetProfile,
     setShowFoodFinder, setShowSecurityInfo,
+    setShowNavigation, setNavDestination
   } = useApp();
   const isFirstTime = userMode === 'first-time';
 
@@ -18,6 +19,15 @@ export default function LeftPanel() {
   const dietLabel = {
     veg: '🥬 Vegetarian', non_veg: '🍗 Non-Veg', both: '🍽️ All',
     vegan: '🌱 Vegan', jain: '🙏 Jain'
+  };
+
+  // Dynamic time calculation based on gate
+  const gateDistance = 450; // default for demo
+  const walkTime = Math.ceil(gateDistance / 80); // 80m per minute
+
+  const handleRestrooms = () => {
+    setNavDestination('Nearest Restroom');
+    setShowNavigation(true);
   };
 
   return (
@@ -107,11 +117,11 @@ export default function LeftPanel() {
         <div className="card-title">⏱ Time to Gate</div>
         <div className="time-gate">
           <div className="time-circle">
-            <span className="mins">8</span>
+            <span className="mins">{walkTime}</span>
             <span className="unit">min</span>
           </div>
-          <div className="time-detail">📏 450 meters away</div>
-          <div className="time-detail">🚶 Walking distance</div>
+          <div className="time-detail">📏 {gateDistance} meters away</div>
+          <div className="time-detail">🚶 Walking distance to {flight.gate}</div>
           <div className="time-recommendation">
             ✓ You have plenty of time. No rush!
           </div>
@@ -131,7 +141,7 @@ export default function LeftPanel() {
           <button className="quick-action-btn" onClick={() => setShowSecurityInfo(true)} aria-label="Security info">
             <span className="icon">🛂</span> Security
           </button>
-          <button className="quick-action-btn" aria-label="Find restrooms">
+          <button className="quick-action-btn" onClick={handleRestrooms} aria-label="Find restrooms">
             <span className="icon">🚻</span> Restrooms
           </button>
         </div>

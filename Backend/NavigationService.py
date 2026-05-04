@@ -13,31 +13,55 @@ class IndoorNavigationService:
 
     def get_directions(self, from_zone: str, to_zone: str) -> Dict:
         """Get step-by-step walking directions between two zones."""
-        path = self._bfs_path(from_zone, to_zone)
+        # Normalize names for better matching
+        f_norm = self._normalize_zone(from_zone)
+        t_norm = self._normalize_zone(to_zone)
+        
+        path = self._bfs_path(f_norm, t_norm)
+        
+        # Determine the final target coordinates
+        target_coords = self._get_location_coords(t_norm)
+        start_coords = self._get_location_coords(f_norm) or {"lat": 28.5560, "lon": 77.0845}
+
         if not path:
-            # Fallback: direct route
+            # Fallback: direct route with real estimation
+            dist = 250
+            if target_coords and start_coords:
+                dist = self._haversine(start_coords['lat'], start_coords['lon'], target_coords['lat'], target_coords['lon'])
+            
             path = [{
-                "zone": to_zone,
+                "zone": t_norm,
                 "instruction": f"Follow airport signage towards {to_zone}",
-                "distance": 250,
+                "distance": round(dist),
                 "landmark": "Check overhead direction boards",
                 "icon": "🧭"
             }]
 
-        total_dist = sum(n["distance"] for n in path)
-        total_min = max(1, round(total_dist / 80))  # 80m per minute walking
+        total_dist = sum(n.get("distance", 0) for n in path)
+        total_min = max(1, round(total_dist / 80))
 
         steps = []
+        route_geometry = [[start_coords['lat'], start_coords['lon']]]
+        
         for i, node in enumerate(path):
-            walk_min = max(1, round(node["distance"] / 80))
-            steps.append({
+            d = node.get("distance", 50)
+            walk_min = max(1, round(d / 80))
+            node_coords = self._get_location_coords(node["zone"])
+            
+            step_data = {
                 "step_number": i + 1,
-                "instruction": node["instruction"],
-                "distance": f"{node['distance']}m",
+                "instruction": node.get("instruction", f"Proceed to {node['zone']}"),
+                "distance": f"{d}m",
                 "duration": f"{walk_min} min",
                 "landmark": node.get("landmark", ""),
                 "icon": node.get("icon", "🚶"),
-            })
+            }
+            
+            if node_coords:
+                step_data["coords"] = [node_coords['lat'], node_coords['lon']]
+                route_geometry.append(step_data["coords"])
+            
+            steps.append(step_data)
 
         return {
             "from": from_zone,
@@ -45,6 +69,7 @@ class IndoorNavigationService:
             "total_distance": f"{total_dist}m",
             "total_duration": f"{total_min} min",
             "steps": steps,
+            "route_geometry": route_geometry,
             "source": "synthetic_indoor_map",
         }
 
@@ -53,6 +78,7 @@ class IndoorNavigationService:
         zones = [
             {"name": "Terminal 3, Main Entrance & Check-in Hall", "lat": 28.5555, "lon": 77.0830, "r": 0.001},
             {"name": "Terminal 3, Security Checkpoint", "lat": 28.5560, "lon": 77.0845, "r": 0.001},
+            {"name": "Terminal Area", "lat": 28.5562, "lon": 77.0844, "r": 0.001},
             {"name": "Terminal 3, Departures Lounge (Gates 1-10)", "lat": 28.5570, "lon": 77.0860, "r": 0.001},
             {"name": "Terminal 3, Food Court Area", "lat": 28.5565, "lon": 77.0850, "r": 0.001},
             {"name": "Terminal 3, Duty Free Shopping Zone", "lat": 28.5530, "lon": 77.0840, "r": 0.001},
@@ -72,7 +98,7 @@ class IndoorNavigationService:
     def get_time_to_gate(self, current_lat: float, current_lon: float, gate: str) -> Dict:
         """Calculate estimated time to reach a specific gate."""
         # Map gate numbers to approximate coordinates
-        gate_coords = self._get_gate_coords(gate)
+        gate_coords = self._get_location_coords(gate)
         if not gate_coords:
             return {"gate": gate, "estimated_minutes": 8, "distance_m": 450, "status": "estimated"}
 
@@ -104,6 +130,9 @@ class IndoorNavigationService:
 
     def _build_airport_graph(self) -> Dict:
         return {
+            "Terminal Area": [
+                {"zone": "Security Checkpoint", "distance": 40, "instruction": "Proceed to the security screening area", "landmark": "Signs for T3 Security", "icon": "🔒"},
+            ],
             "Main Entrance": [
                 {"zone": "Check-in Counters", "distance": 80, "instruction": "Walk straight towards check-in counters", "landmark": "Look for airline logos overhead", "icon": "➡️"},
             ],
@@ -115,78 +144,88 @@ class IndoorNavigationService:
             ],
             "Departures Lounge": [
                 {"zone": "Gates 1-10", "distance": 100, "instruction": "Turn left towards Gates 1-10", "landmark": "Chaayos cafe on your right", "icon": "⬅️"},
-                {"zone": "Gates 11-20", "distance": 150, "instruction": "Walk straight towards Gates 11-20", "landmark": "Costa Coffee on your left", "icon": "➡️"},
-                {"zone": "Gates 37-45", "distance": 200, "instruction": "Continue straight past the food court towards Gates 37-45", "landmark": "Wow! Momo counter on right", "icon": "➡️"},
-                {"zone": "Duty Free Zone", "distance": 80, "instruction": "Turn right into the Duty Free shopping area", "landmark": "Perfume section entrance", "icon": "🛍️"},
+                {"zone": "Starbucks Coffee", "distance": 45, "instruction": "Starbucks is just past the security exit", "landmark": "Smell of fresh coffee on your left", "icon": "☕"},
+                {"zone": "Duty Free Shop", "distance": 30, "instruction": "Enter the main Duty Free area straight ahead", "landmark": "Large perfume displays", "icon": "🛍️"},
+                {"zone": "WHSmith", "distance": 55, "instruction": "WHSmith is located near the central lounge entrance", "landmark": "Magazine racks visible from distance", "icon": "📚"},
+                {"zone": "Food Court", "distance": 120, "instruction": "Walk towards the central food court area", "landmark": "Vibrant food stalls ahead", "icon": "🍽️"},
+            ],
+            "Food Court": [
+                {"zone": "Punjab Grill", "distance": 25, "instruction": "Punjab Grill is in the North corner of the food court", "landmark": "Traditional Indian decor", "icon": "🍛"},
+                {"zone": "Gates 37-45", "distance": 80, "instruction": "Exit food court towards Gates 37-45", "landmark": "Follow signs for Concourse B", "icon": "➡️"},
             ],
             "Gates 1-10": [
                 {"zone": "Gate 5B", "distance": 80, "instruction": "Walk along the corridor to Gate 5B", "landmark": "Restrooms on your right before the gate", "icon": "🎯"},
             ],
-            "Gates 11-20": [
-                {"zone": "Gate 15", "distance": 70, "instruction": "Continue to Gate 15", "landmark": "Dosa Factory restaurant nearby", "icon": "🎯"},
-            ],
             "Gates 37-45": [
                 {"zone": "Gate 42", "distance": 60, "instruction": "Walk to Gate 42", "landmark": "Vaango! restaurant on left", "icon": "🎯"},
-                {"zone": "Gates 55-62", "distance": 180, "instruction": "Continue further towards Gates 55-62", "landmark": "Follow overhead signs", "icon": "➡️"},
             ],
-            "Gates 55-62": [
-                {"zone": "Gate 55", "distance": 50, "instruction": "Gate 55 is on your left", "landmark": "Near the end of the concourse", "icon": "🎯"},
-                {"zone": "Gate 60", "distance": 80, "instruction": "Continue to Gate 60", "landmark": "Window seating area on right", "icon": "🎯"},
-                {"zone": "Gate 62", "distance": 100, "instruction": "Walk to the end for Gate 62", "landmark": "Last gate in this wing", "icon": "🎯"},
-            ],
-            "Duty Free Zone": [
-                {"zone": "International Departures", "distance": 100, "instruction": "Continue through duty free to International departures", "landmark": "Swarovski store on left", "icon": "✈️"},
-            ],
-            # Terminal nodes
+            "Starbucks Coffee": [], "Punjab Grill": [], "WHSmith": [], "Duty Free Shop": [],
             "Gate 5B": [], "Gate 15": [], "Gate 42": [], "Gate 55": [],
             "Gate 60": [], "Gate 62": [], "International Departures": [],
         }
 
     def _bfs_path(self, start: str, end: str) -> Optional[List[Dict]]:
-        # Normalize zone name
-        start = self._normalize_zone(start)
-        end = self._normalize_zone(end)
-
         if start not in self.graph or end not in self.graph:
             return None
 
         queue = deque([(start, [])])
-        visited = set()
+        visited = {start}
         while queue:
             current, path = queue.popleft()
             if current == end:
                 return path
-            if current in visited:
-                continue
-            visited.add(current)
+            
             for conn in self.graph.get(current, []):
-                queue.append((conn["zone"], path + [conn]))
+                z = conn["zone"]
+                if z not in visited:
+                    visited.add(z)
+                    queue.append((z, path + [conn]))
         return None
 
     def _normalize_zone(self, name: str) -> str:
         """Try to match user-provided name to a graph node."""
+        if not name: return "Terminal Area"
         name_lower = name.lower().strip()
+        
+        # Exact match
         for node in self.graph:
             if node.lower() == name_lower:
                 return node
-        # Partial match
-        for node in self.graph:
-            if name_lower in node.lower() or node.lower() in name_lower:
-                return node
-        return name
+        
+        # Substring match (avoid empty string matching everything)
+        if name_lower:
+            for node in self.graph:
+                if name_lower in node.lower() or node.lower() in name_lower:
+                    return node
+        
+        return "Terminal Area"
 
-    def _get_gate_coords(self, gate: str) -> Optional[Dict]:
-        gate_map = {
+    def _get_location_coords(self, name: str) -> Optional[Dict]:
+        loc_map = {
+            "Terminal Area": {"lat": 28.5562, "lon": 77.0844},
             "5B": {"lat": 28.5570, "lon": 77.0860},
-            "5b": {"lat": 28.5570, "lon": 77.0860},
             "15": {"lat": 28.5558, "lon": 77.0815},
             "42": {"lat": 28.5566, "lon": 77.0848},
             "55": {"lat": 28.5497, "lon": 77.0891},
             "60": {"lat": 28.5495, "lon": 77.0900},
             "62": {"lat": 28.5491, "lon": 77.0903},
+            "Starbucks Coffee": {"lat": 28.5565, "lon": 77.0855},
+            "Cafeccino": {"lat": 19.0917053, "lon": 72.8567979},
+            "Irani Cafe": {"lat": 19.0964751, "lon": 72.8744612},
+            "Punjab Grill": {"lat": 28.5568, "lon": 77.0850},
+            "WHSmith": {"lat": 28.5563, "lon": 77.0842},
+            "Duty Free Shop": {"lat": 28.5561, "lon": 77.0852},
+            "Costa Coffee": {"lat": 28.5596708, "lon": 77.0873733},
+            "Security Checkpoint": {"lat": 28.5560, "lon": 77.0845},
+            "Departures Lounge": {"lat": 28.5564, "lon": 77.0848},
+            "Food Court": {"lat": 28.5567, "lon": 77.0851},
+            "Premium Lounge": {"lat": 28.5569, "lon": 77.0858},
+            "Pharmacy": {"lat": 28.5555, "lon": 77.0835},
+            "ATM (HDFC)": {"lat": 28.5558, "lon": 77.0838},
         }
-        g = gate.upper().replace("GATE ", "").replace("GATE", "").strip()
-        return gate_map.get(g) or gate_map.get(g.lower())
+        n = self._normalize_zone(name)
+        return loc_map.get(n)
+
 
     def _haversine(self, lat1, lon1, lat2, lon2):
         R = 6371000

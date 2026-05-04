@@ -87,9 +87,21 @@ class ChatBot:
         return base
 
     def get_response(self, query: str, user_profile: str, latitude: float = None, longitude: float = None) -> str:
-        # Retrieve relevant context from RAG
+        # Check if Hindi is requested
+        is_hindi = 'language: hindi' in user_profile.lower()
+        
+        # If Hindi, translate the query to English first so the AI understands it perfectly
+        final_query = query
         try:
-            context = self.rag_service.retrieve_context(query)
+            if is_hindi:
+                from deep_translator import GoogleTranslator
+                final_query = GoogleTranslator(source='hi', target='en').translate(query)
+        except Exception as e:
+            print(f"Translation to English failed: {e}")
+
+        # Retrieve relevant context from RAG using the English query
+        try:
+            context = self.rag_service.retrieve_context(final_query)
         except Exception as e:
             print(f"RAG error: {e}")
             context = ""
@@ -108,7 +120,7 @@ class ChatBot:
         
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": query}
+            {"role": "user", "content": final_query}
         ]
         
         try:
@@ -127,13 +139,26 @@ class ChatBot:
             response.raise_for_status()
             
             data = response.json()
-            return data["message"]["content"].strip()
+            english_response = data["message"]["content"].strip()
+
+            # Translate the AI's English response back to Hindi
+            if is_hindi:
+                try:
+                    from deep_translator import GoogleTranslator
+                    hindi_response = GoogleTranslator(source='en', target='hi').translate(english_response)
+                    return hindi_response
+                except Exception as e:
+                    print(f"Translation to Hindi failed: {e}")
+                    return english_response
+
+            return english_response
+            
         except requests.exceptions.ConnectionError:
-            return "I'm sorry, the AI engine is starting up. Please try again in a few seconds."
+            return "I'm sorry, the AI engine is starting up. Please try again in a few seconds." if not is_hindi else "क्षमा करें, AI इंजन चालू हो रहा है। कृपया कुछ सेकंड में पुनः प्रयास करें।"
         except requests.exceptions.Timeout:
-            return "The AI is taking longer than expected. Please try your question again."
+            return "The AI is taking longer than expected. Please try your question again." if not is_hindi else "AI को अपेक्षा से अधिक समय लग रहा है। कृपया अपना प्रश्न पुनः पूछें।"
         except Exception as e:
-            return f"I encountered an error: {str(e)}. Please try again."
+            return f"I encountered an error: {str(e)}. Please try again." if not is_hindi else "मुझे एक त्रुटि का सामना करना पड़ा। कृपया पुनः प्रयास करें।"
 
 # For testing
 if __name__ == "__main__":

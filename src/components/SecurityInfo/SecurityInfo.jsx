@@ -119,7 +119,7 @@ export default function SecurityInfo({ onClose }) {
                 <div className="sec-panel">
                   <h3 className="sec-section-title">❌ Prohibited Items</h3>
                   <div className="prohibited-list">
-                    {(rules.procedures?.prohibited_items || []).map((item, i) => (
+                    {(rules.procedures?.prohibited_items_strict || rules.procedures?.prohibited_items || []).map((item, i) => (
                       <div key={i} className="prohibited-card">
                         <span className="prohibited-icon">{item.icon || '🚫'}</span>
                         <div>

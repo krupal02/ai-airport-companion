@@ -29,6 +29,19 @@ export function AppProvider({ children }) {
     const mode = modeMap[profile.travel_frequency] || USER_MODES.FIRST_TIME;
     setUserMode(mode);
     localStorage.setItem('ac-userMode', mode);
+
+    // DYNAMIC FLIGHT DATA BASED ON PNR/FLIGHT NUMBER
+    if (profile.flight_number || profile.pnr) {
+      const identifier = (profile.flight_number || profile.pnr).toUpperCase();
+      setFlight(prev => ({
+        ...prev,
+        flightNumber: identifier,
+        gate: identifier.includes('6E') ? '12A' : (identifier.includes('UK') ? '8C' : '5B'),
+        terminal: identifier.includes('6E') ? 'Terminal 2' : 'Terminal 3',
+        departureTime: identifier.includes('6E') ? '18:45' : '14:30',
+        boardingTime: identifier.includes('6E') ? '18:00' : '13:45',
+      }));
+    }
   }, []);
 
   const resetProfile = useCallback(() => {
@@ -78,6 +91,12 @@ export function AppProvider({ children }) {
 
   const updateAirport = useCallback((airportData) => {
     setAirport(airportData);
+    // DYNAMIC FLIGHT DATA BASED ON AIRPORT
+    setFlight(prev => ({
+      ...prev,
+      terminal: airportData.id === 'BOM' ? 'Terminal 2 (Mumbai)' : (airportData.id === 'BLR' ? 'Terminal 2 (Bengaluru)' : 'Terminal 3 (Delhi)'),
+      status: airportData.id === 'BOM' ? 'Delayed' : 'On Time'
+    }));
   }, []);
 
   const updateLanguage = useCallback((lang) => {
