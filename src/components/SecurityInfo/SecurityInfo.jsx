@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export default function SecurityInfo({ onClose }) {
   const [activeTab, setActiveTab] = useState('procedure');
@@ -31,7 +31,7 @@ export default function SecurityInfo({ onClose }) {
     { id: 'tips', label: '💡 Tips', icon: '💡' },
   ];
 
-  const fetchRules = async () => {
+  const fetchRules = useCallback(async () => {
     setLoading(true);
     try {
       const url = `http://localhost:8000/api/security/rules?airport_code=${airportCode}&flight_type=${flightType}&destination=${destination}`;
@@ -43,9 +43,10 @@ export default function SecurityInfo({ onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [airportCode, flightType, destination]);
 
-  useEffect(() => { fetchRules(); }, [flightType, destination, airportCode]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchRules(); }, [fetchRules]);
 
   const getSeverityClass = (sev) => {
     if (sev === 'critical') return 'severity-critical';

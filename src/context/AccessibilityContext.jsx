@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, useCallback } from 'react';
 import { FONT_SIZES } from '../utils/constants';
 
-const AccessibilityContext = createContext();
+ 
+export const AccessibilityContext = createContext();
 
 export function AccessibilityProvider({ children }) {
   const [fontSize, setFontSize] = useState(() => {
@@ -61,5 +63,3 @@ export function useAccessibility() {
   }
   return context;
 }
-
-export default AccessibilityContext;

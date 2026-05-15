@@ -1,3 +1,4 @@
+
 # AI Airport Companion ✈️
 
 A modern, accessible React frontend for navigating airports with ease. Features real-time flight info, AI chat assistance, nearby places, and step-by-step navigation.

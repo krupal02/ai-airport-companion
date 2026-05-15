@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Dropdown({ trigger, children, align = 'left', className = '' }) {
   const [open, setOpen] = useState(false);

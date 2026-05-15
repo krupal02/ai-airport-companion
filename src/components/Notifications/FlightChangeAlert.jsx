@@ -7,7 +7,7 @@ export default function FlightChangeAlert({ userId }) {
   
   return (
     <div className="fixed top-20 right-5 z-[10000] flex flex-col gap-4">
-      {notifications.map((notif, idx) => (
+      {notifications.map((notif) => (
         <div 
           key={notif.timestamp}
           className={`bg-white rounded-xl shadow-2xl p-5 w-96 animate-slideIn border-l-8 ${

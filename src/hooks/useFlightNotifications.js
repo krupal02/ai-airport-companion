@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export const useFlightNotifications = (userId) => {
   const [notifications, setNotifications] = useState([]);
-  const [ws, setWs] = useState(null);
+
   
   useEffect(() => {
     if (!userId) return;
@@ -24,8 +24,7 @@ export const useFlightNotifications = (userId) => {
       }
     };
     
-    setWs(websocket);
-    
+    // Websocket is managed locally and cleaned up in return
     // Cleanup
     return () => {
       if (websocket) {

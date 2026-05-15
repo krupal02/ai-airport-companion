@@ -9,7 +9,7 @@ export const useVoice = () => {
         const response = await fetch('http://localhost:8000/api/voice/status');
         const data = await response.json();
         setIsReading(data.is_reading);
-      } catch (error) {
+      } catch {
         // ignore
       }
     }, 1000);

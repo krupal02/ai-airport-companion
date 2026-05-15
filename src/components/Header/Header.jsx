@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Dropdown from '../Common/Dropdown';
 import { useApp } from '../../context/AppContext';
 import { useAccessibility } from '../../context/AccessibilityContext';

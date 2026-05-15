@@ -1,4 +1,3 @@
-import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import Header from './components/Header/Header';

@@ -24,7 +24,7 @@ const ALL_POIS = [
   { name: 'Nearest Restroom', coords: [28.5564, 77.0840], type: 'service' },
 ];
 
-export default function RouteDisplay({ from, to }) {
+export default function RouteDisplay({ to }) {
   const [directions, setDirections] = useState(null);
   const [loading, setLoading] = useState(true);
   

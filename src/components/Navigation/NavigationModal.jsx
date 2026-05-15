@@ -1,4 +1,3 @@
-import React from 'react';
 import { navigationSteps } from '../../utils/mockData';
 
 export default function NavigationModal({ onClose }) {

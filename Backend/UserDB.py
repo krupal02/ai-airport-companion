@@ -56,6 +56,47 @@ def create_user(profile: dict) -> dict:
     session_token = str(uuid.uuid4())
     expires = datetime.now() + timedelta(hours=24)
 
+    pnr = str(profile.get('pnr', '')).upper()
+    
+    # Check if user with PNR already exists
+    if pnr:
+        existing = conn.execute("SELECT user_id FROM users WHERE pnr = ?", (pnr,)).fetchone()
+        if existing:
+            user_id = existing['user_id']
+            try:
+                conn.execute("""
+                    UPDATE users SET
+                        full_name=?, age_group=?, travel_frequency=?, loyalty_programs=?,
+                        special_assistance=?, language_preference=?, dietary_preference=?,
+                        dietary_restrictions=?, flight_number=?, departure_airport=?, travel_date=?,
+                        last_updated=CURRENT_TIMESTAMP
+                    WHERE pnr=?
+                """, (
+                    profile.get('full_name', 'Guest'),
+                    profile.get('age_group', '18-30'),
+                    profile.get('travel_frequency', 'first_time'),
+                    json.dumps(profile.get('loyalty_programs', [])),
+                    json.dumps(profile.get('special_assistance', [])),
+                    profile.get('language_preference', 'en'),
+                    profile.get('dietary_preference', 'both'),
+                    profile.get('dietary_restrictions', ''),
+                    profile.get('flight_number', ''),
+                    profile.get('departure_airport', ''),
+                    profile.get('travel_date', ''),
+                    pnr
+                ))
+                conn.execute("""
+                    INSERT INTO user_sessions (user_id, session_token, expires_at)
+                    VALUES (?, ?, ?)
+                """, (user_id, session_token, expires.isoformat()))
+                conn.commit()
+                return {"user_id": user_id, "session_token": session_token, "status": "updated"}
+            except Exception as e:
+                print(f"Error updating user: {e}")
+                return {"user_id": user_id, "session_token": session_token, "error": str(e)}
+            finally:
+                conn.close()
+
     try:
         conn.execute("""
             INSERT INTO users (user_id, full_name, pnr, age_group, travel_frequency,
@@ -66,7 +107,7 @@ def create_user(profile: dict) -> dict:
         """, (
             user_id,
             profile.get('full_name', 'Guest'),
-            profile.get('pnr', ''),
+            pnr,
             profile.get('age_group', '18-30'),
             profile.get('travel_frequency', 'first_time'),
             json.dumps(profile.get('loyalty_programs', [])),
@@ -85,7 +126,7 @@ def create_user(profile: dict) -> dict:
         """, (user_id, session_token, expires.isoformat()))
 
         conn.commit()
-        return {"user_id": user_id, "session_token": session_token}
+        return {"user_id": user_id, "session_token": session_token, "status": "created"}
     except Exception as e:
         print(f"Error creating user: {e}")
         return {"user_id": user_id, "session_token": session_token, "error": str(e)}

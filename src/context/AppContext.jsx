@@ -1,10 +1,17 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { USER_MODES, AIRPORTS, LANGUAGES } from '../utils/constants';
 import { flightData, userLocation, nearbyPlaces, offers, quickTips, destinationWeather } from '../utils/mockData';
 
-const AppContext = createContext();
+ 
+export const AppContext = createContext();
 
 export function AppProvider({ children }) {
+  // ── Existing state ─────────────────────────────────────
+  const [airport, setAirport] = useState(AIRPORTS[0]);
+  const [language, setLanguage] = useState(LANGUAGES[0]);
+  const [flight, setFlight] = useState(flightData);
+
   const [userMode, setUserMode] = useState(() => {
     return localStorage.getItem('ac-userMode') || USER_MODES.FIRST_TIME;
   });
@@ -55,14 +62,11 @@ export function AppProvider({ children }) {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
 
   // ── Existing state ─────────────────────────────────────
-  const [airport, setAirport] = useState(AIRPORTS[0]);
-  const [language, setLanguage] = useState(LANGUAGES[0]);
-  const [flight, setFlight] = useState(flightData);
   const [location, setLocation] = useState(userLocation);
-  const [places, setPlaces] = useState(nearbyPlaces);
-  const [currentOffers, setCurrentOffers] = useState(offers);
-  const [tips, setTips] = useState(quickTips);
-  const [weather, setWeather] = useState(destinationWeather);
+  const [places] = useState(nearbyPlaces);
+  const [currentOffers] = useState(offers);
+  const [tips] = useState(quickTips);
+  const [weather] = useState(destinationWeather);
   const [showNavigation, setShowNavigation] = useState(false);
   const [navDestination, setNavDestination] = useState(null);
   const [mobilePanel, setMobilePanel] = useState(null);
@@ -97,7 +101,7 @@ export function AppProvider({ children }) {
       terminal: airportData.id === 'BOM' ? 'Terminal 2 (Mumbai)' : (airportData.id === 'BLR' ? 'Terminal 2 (Bengaluru)' : 'Terminal 3 (Delhi)'),
       status: airportData.id === 'BOM' ? 'Delayed' : 'On Time'
     }));
-  }, []);
+  }, [setAirport, setFlight]);
 
   const updateLanguage = useCallback((lang) => {
     setLanguage(lang);
@@ -161,5 +165,3 @@ export function useApp() {
   }
   return context;
 }
-
-export default AppContext;

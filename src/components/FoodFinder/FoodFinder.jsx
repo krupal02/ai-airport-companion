@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 
 const CUISINE_CATEGORIES = {
@@ -15,7 +15,7 @@ export default function FoodFinder({ onClose }) {
   const [selectedCuisines, setSelectedCuisines] = useState([]);
   const [dietFilter, setDietFilter] = useState(userProfile?.dietary_preference || 'both');
   const [sortBy, setSortBy] = useState('rating');
-  const [priceRange, setPriceRange] = useState([]);
+  const [priceRange] = useState([]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -25,11 +25,9 @@ export default function FoodFinder({ onClose }) {
     setSelectedCuisines(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
   };
 
-  const togglePrice = (p) => {
-    setPriceRange(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
-  };
 
-  const search = async () => {
+
+  const search = useCallback(async () => {
     setLoading(true);
     setSearched(true);
     try {
@@ -53,10 +51,11 @@ export default function FoodFinder({ onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCuisines, dietFilter, sortBy, priceRange, coordinates, userProfile]);
 
   // Auto-search on mount
-  useEffect(() => { search(); }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { search(); }, [search]);
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && onClose()}>

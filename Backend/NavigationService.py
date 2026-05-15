@@ -203,12 +203,12 @@ class IndoorNavigationService:
     def _get_location_coords(self, name: str) -> Optional[Dict]:
         loc_map = {
             "Terminal Area": {"lat": 28.5562, "lon": 77.0844},
-            "5B": {"lat": 28.5570, "lon": 77.0860},
-            "15": {"lat": 28.5558, "lon": 77.0815},
-            "42": {"lat": 28.5566, "lon": 77.0848},
-            "55": {"lat": 28.5497, "lon": 77.0891},
-            "60": {"lat": 28.5495, "lon": 77.0900},
-            "62": {"lat": 28.5491, "lon": 77.0903},
+            "Gate 5B": {"lat": 28.5570, "lon": 77.0860},
+            "Gate 15": {"lat": 28.5558, "lon": 77.0815},
+            "Gate 42": {"lat": 28.5566, "lon": 77.0848},
+            "Gate 55": {"lat": 28.5497, "lon": 77.0891},
+            "Gate 60": {"lat": 28.5495, "lon": 77.0900},
+            "Gate 62": {"lat": 28.5491, "lon": 77.0903},
             "Starbucks Coffee": {"lat": 28.5565, "lon": 77.0855},
             "Cafeccino": {"lat": 19.0917053, "lon": 72.8567979},
             "Irani Cafe": {"lat": 19.0964751, "lon": 72.8744612},

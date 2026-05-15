@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useChat } from '../../hooks/useChat';
 import { useApp } from '../../context/AppContext';
 import { suggestedPrompts } from '../../utils/mockData';
@@ -18,7 +18,7 @@ function parseContent(text) {
   });
 }
 
-function MessageBubble({ msg, feedbackGiven, onFeedback, isFirstTime, startReading }) {
+function MessageBubble({ msg, feedbackGiven, onFeedback, startReading }) {
   const [showNav, setShowNav] = useState(false);
 
   if (msg.type === 'system') {
@@ -168,7 +168,7 @@ export default function ChatInterface() {
 
       recognitionRef.current = rec;
     }
-  }, []);
+  }, [SpeechRecognition]);
 
   const toggleMic = () => {
     if (!recognitionRef.current) {
@@ -205,7 +205,6 @@ export default function ChatInterface() {
             msg={msg}
             feedbackGiven={feedbackGiven[msg.id]}
             onFeedback={giveFeedback}
-            isFirstTime={isFirstTime}
             startReading={startReading}
           />
         ))}
