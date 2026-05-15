@@ -7,7 +7,6 @@ langchain-chroma
 chromadb
 sentence-transformers
 SpeechRecognition
-pywin32
 python-dotenv
 pydantic
 accelerate

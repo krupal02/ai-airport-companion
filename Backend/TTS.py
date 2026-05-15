@@ -1,15 +1,21 @@
-import pythoncom
-import win32com.client
 import threading
+
+try:
+    import pythoncom
+    import win32com.client
+    HAS_WIN32 = True
+except ImportError:
+    HAS_WIN32 = False
 
 class TTS:
     def __init__(self):
-        # We need to run SAPI5 in the same thread if we want it to block, 
-        # or handle COM initialization per thread if we don't want it to freeze the main thread.
-        # But per user instruction: "Do NOT use pyttsx3 because it freezes threads. Use this exact logic..."
         pass
 
     def speak(self, text: str):
+        if not HAS_WIN32:
+            print(f"[TTS Mock] {text}")
+            return
+
         def _speak_thread():
             pythoncom.CoInitialize()
             try:

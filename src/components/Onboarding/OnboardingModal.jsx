@@ -54,7 +54,7 @@ export default function OnboardingModal({ onComplete }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:8000/api/users/profile', {
+      const res = await fetch('/api/users/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

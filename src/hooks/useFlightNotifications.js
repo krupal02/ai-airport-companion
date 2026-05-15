@@ -8,7 +8,7 @@ export const useFlightNotifications = (userId) => {
     if (!userId) return;
     
     // Establish WebSocket connection
-    const websocket = new WebSocket(`ws://localhost:8000/ws/flight-updates/${userId}`);
+    const websocket = new WebSocket(`${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/flight-updates/${userId}`);
     
     websocket.onmessage = (event) => {
       const notification = JSON.parse(event.data);

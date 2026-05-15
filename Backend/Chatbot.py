@@ -154,7 +154,8 @@ class ChatBot:
             return english_response
             
         except requests.exceptions.ConnectionError:
-            return "I'm sorry, the AI engine is starting up. Please try again in a few seconds." if not is_hindi else "क्षमा करें, AI इंजन चालू हो रहा है। कृपया कुछ सेकंड में पुनः प्रयास करें।"
+            mock = f"[Cloud Demo Mode] Here is a simulated response for: '{final_query}'. The live model requires local Ollama hardware."
+            return mock if not is_hindi else f"[Cloud Demo Mode] {mock}"
         except requests.exceptions.Timeout:
             return "The AI is taking longer than expected. Please try your question again." if not is_hindi else "AI को अपेक्षा से अधिक समय लग रहा है। कृपया अपना प्रश्न पुनः पूछें।"
         except Exception as e:

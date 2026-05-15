@@ -34,7 +34,7 @@ export default function SecurityInfo({ onClose }) {
   const fetchRules = useCallback(async () => {
     setLoading(true);
     try {
-      const url = `http://localhost:8000/api/security/rules?airport_code=${airportCode}&flight_type=${flightType}&destination=${destination}`;
+      const url = `/api/security/rules?airport_code=${airportCode}&flight_type=${flightType}&destination=${destination}`;
       const res = await fetch(url);
       const data = await res.json();
       setRules(data);

@@ -6,7 +6,7 @@ export const useVoice = () => {
   useEffect(() => {
     const checkStatus = setInterval(async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/voice/status');
+        const response = await fetch('/api/voice/status');
         const data = await response.json();
         setIsReading(data.is_reading);
       } catch {
@@ -18,7 +18,7 @@ export const useVoice = () => {
   
   const stopReading = useCallback(async () => {
     try {
-      await fetch('http://localhost:8000/api/voice/stop', {
+      await fetch('/api/voice/stop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: localStorage.getItem('aeroguide_user_id') || 'local' })
@@ -31,7 +31,7 @@ export const useVoice = () => {
 
   const startReading = useCallback(async (text, language = 'en') => {
     try {
-      await fetch('http://localhost:8000/api/voice/read', {
+      await fetch('/api/voice/read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

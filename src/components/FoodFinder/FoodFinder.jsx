@@ -31,7 +31,7 @@ export default function FoodFinder({ onClose }) {
     setLoading(true);
     setSearched(true);
     try {
-      const res = await fetch('http://localhost:8000/api/food/recommendations', {
+      const res = await fetch('/api/food/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

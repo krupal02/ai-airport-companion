@@ -35,7 +35,7 @@ export function useChat() {
       const profileString = userProfile ? JSON.stringify(userProfile) : userMode;
       const langStr = language ? language.name : 'English';
       
-      const res = await fetch('http://localhost:8000/api/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
