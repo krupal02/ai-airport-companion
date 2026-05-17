@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-import os, json, math, asyncio, ollama
+import os, json, math, asyncio
 
 from Backend.Chatbot import ChatBot
 from Backend.TTS import TTS

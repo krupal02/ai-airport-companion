@@ -1,12 +1,6 @@
 fastapi
 uvicorn
-ollama
-langchain
-langchain-huggingface
-langchain-chroma
-chromadb
-sentence-transformers
-SpeechRecognition
 python-dotenv
 pydantic
-accelerate
+requests
+deep-translator

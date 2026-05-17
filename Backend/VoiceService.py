@@ -1,5 +1,9 @@
 import threading
-import pythoncom
+try:
+    import pythoncom
+    HAS_WIN32 = True
+except ImportError:
+    HAS_WIN32 = False
 
 class ContinuousVoiceReader:
     """Enhanced TTS with continuous reading that auto-stops on new user message."""
@@ -11,6 +15,10 @@ class ContinuousVoiceReader:
 
     def read_document(self, text, language="en"):
         """Read text continuously in background. Stops if stop_reading() is called."""
+        if not HAS_WIN32:
+            print(f"[TTS Mock Continuous] {text}")
+            return
+            
         self.stop_reading()
         self.stop_flag.clear()
         self.is_reading = True
